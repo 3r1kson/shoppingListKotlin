@@ -35,8 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 data class ShoppingItem(
-    val id: Int,
-    val name: String,
+    var id: Int,
+    var name: String,
     var quantity: Int,
     var isEditing: Boolean = false
 )
@@ -61,7 +61,8 @@ fun ShoppingListApp() {
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center
     ) {
-        Button(onClick = { showDialog = true },
+        Button(
+            onClick = { showDialog = true },
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
             Text(text = "Add Item")
@@ -71,38 +72,57 @@ fun ShoppingListApp() {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            items(sItems) {
-                ShoppingListItem(it, {}, {})
+            items(sItems) { item ->
+                if (item.isEditing) {
+                    ShoppingItemEditor(
+                        item = item,
+                        onEditComplete = { editedName, editedQuantity ->
+                            sItems = sItems.map { it.copy(isEditing = false) }
+                            val editedItem = sItems.find { it.id == item.id }
+                            editedItem?.let {
+                                it.name = editedName
+                                it.quantity = editedQuantity
+                            }
+                        }
+                    )
+                } else {
+                    ShoppingListItem(
+                        item = item,
+                        onEditClick = { sItems = sItems.map { it.copy(isEditing = it.id == item.id) } },
+                        onDeleteClick = { sItems = sItems - item }
+                    )
+                }
             }
         }
     }
     if(showDialog) {
+        itemQuantity = "1"
         AlertDialog(
             onDismissRequest = { showDialog = false },
             confirmButton = {
-                            Row(modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween) {
-                                Button(onClick = {
-                                    if(itemName.isNotBlank()) {
-                                        val newItem = ShoppingItem(
-                                            id = sItems.size+1,
-                                            name = itemName,
-                                            quantity = itemQuantity.toInt()
-                                        )
-                                        sItems = sItems + newItem
-                                        showDialog = false
-                                        itemName = ""
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween) {
+                    Button(onClick = {
+                        if(itemName.isNotBlank()) {
+                            val newItem = ShoppingItem(
+                                id = sItems.size+1,
+                                name = itemName,
+                                quantity = itemQuantity.toInt()
+                            )
+                            sItems = sItems + newItem
+                            showDialog = false
+                            itemName = ""
 
-                                    }
-                                }) {
-                                    Text(text = "Add")
-                                }
-                                Button(onClick = { showDialog = false }) {
-                                    Text(text = "Cancel")
-                                }
-                            }
+                        }
+                    }) {
+                        Text(text = "Add")
+                    }
+                    Button(onClick = { showDialog = false }) {
+                        Text(text = "Cancel")
+                    }
+                }
             },
             title = { Text(text = "Add Shopping Item") },
             text = {
@@ -168,13 +188,12 @@ fun ShoppingItemEditor(item: ShoppingItem, onEditComplete: (String, Int) -> Unit
             Text(text = "Save")
         }
     }
-
 }
 
 @Composable
 fun ShoppingListItem(
-    item: ShoppingItem, 
-    onEditClick: () -> Unit, 
+    item: ShoppingItem,
+    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ){
     Row(modifier = Modifier
@@ -183,14 +202,16 @@ fun ShoppingListItem(
         .border(
             border = BorderStroke(2.dp, Color(0XFF018786)),
             shape = RoundedCornerShape(20)
-        )) {
+        ),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         Text(text = item.name, modifier = Modifier.padding(8.dp))
         Text(text = "Qty: ${item.quantity}", modifier = Modifier.padding(8.dp))
         Row(modifier = Modifier.padding(8.dp)) {
-            IconButton(onClick = { onEditClick }) {
+            IconButton(onClick =  onEditClick, ) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = null)
             }
-            IconButton(onClick = { onDeleteClick }) {
+            IconButton(onClick = onDeleteClick, ) {
                 Icon(imageVector = Icons.Default.Delete, contentDescription = null)
             }
         }
